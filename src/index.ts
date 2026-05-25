@@ -118,40 +118,37 @@ const problemDetection: ResolverHandler = async (ctx) => {
   for (const fp of filePaths as string[]) {
     try {
       const source = await Bun.file(fp).text();
-      const cpg = buildCPG(fp, source);
       if (isCPGSupported(fp)) {
-      const cpg = buildCPG(fp, source);
-      const nodes = Array.from(cpg.nodes.values());
+        const cpg = buildCPG(fp, source);
+        const nodes = Array.from(cpg.nodes.values());
 
-      // Surface large functions as potential quality issues
-      for (const node of nodes) {
-        if (problems.length >= maxProblems) break;
-        if (node.type === NodeType.FUNCTION && node.endLine && node.startLine &&
-            node.endLine - node.startLine > 80) {
+        for (const node of nodes) {
+          if (problems.length >= maxProblems) break;
+          if (node.type === NodeType.FUNCTION && node.endLine && node.startLine &&
+              node.endLine - node.startLine > 80) {
+            problems.push({
+              file: fp,
+              line: node.startLine ?? 0,
+              column: 0,
+              severity: "low",
+              category: "complexity",
+              message: `Function '${node.name}' is ${node.endLine - node.startLine} lines long (>80)`,
+            });
+          }
+        }
+
+        const fileNode = nodes.find(n => n.type === NodeType.FILE);
+        if (!fileNode) {
           problems.push({
             file: fp,
-            line: node.startLine ?? 0,
+            line: 0,
             column: 0,
-            severity: "low",
-            category: "complexity",
-            message: `Function '${node.name}' is ${node.endLine - node.startLine} lines long (>80)`,
+            severity: "high",
+            category: "parse_error",
+            message: "CPG could not build a file node — possible syntax error",
           });
         }
       }
-
-      // Report if CPG has no file node (possible parse error)
-      const fileNode = nodes.find(n => n.type === NodeType.FILE);
-      if (!fileNode) {
-        problems.push({
-          file: fp,
-          line: 0,
-          column: 0,
-          severity: "high",
-          category: "parse_error",
-          message: "CPG could not build a file node — possible syntax error",
-        });
-      }
-    }
     } catch (e) {
       problems.push({
         file: fp,
