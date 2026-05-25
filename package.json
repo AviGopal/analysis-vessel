@@ -1,0 +1,19 @@
+{
+  "name": "analysis-vessel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@avigopal/ias-executor-ts": "file:../ias-executor-ts",
+    "@metabob/cpg-inference": "file:../cpg-inference-ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "bun-types": "latest"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "name": "numkong",
+  "version": "7.6.0",
+  "description": "Portable mixed-precision math, linear-algebra, & retrieval library with 2000+ SIMD kernels for x86, Arm, RISC-V, LoongArch, Power, & WebAssembly",
+  "homepage": "https://github.com/ashvardanian/NumKong",
+  "author": "Ash Vardanian",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ashvardanian/NumKong"
+  },
+  "keywords": [
+    "vector",
+    "distance",
+    "similarity",
+    "search",
+    "ai",
+    "math",
+    "avx2",
+    "avx512",
+    "neon",
+    "sve",
+    "arm",
+    "x86",
+    "simd",
+    "f16"
+  ],
+  "scripts": {
+    "preinstall": "node probes/probe.js",
+    "install": "node-gyp-build",
+    "build-js": "rm -fr javascript/dist/* && tsc -p javascript/tsconfig-esm.json && tsc -p javascript/tsconfig-cjs.json && cp javascript/dist-package-esm.json javascript/dist/esm/package.json && cp javascript/dist-package-cjs.json javascript/dist/cjs/package.json",
+    "build-browser": "esbuild javascript/dist/esm/numkong-browser.js --bundle --format=esm --platform=browser --target=es2022 --outfile=build-wasm/numkong-bundle.js",
+    "test": "node --test ./test/test.mjs",
+    "test:bun": "bun test ./test/test.mjs",
+    "test:deno": "deno test -A --no-check",
+    "test:wasm:emscripten": "NK_RUNTIME=emscripten node --test test/test-wasm.mjs",
+    "test:wasm:emscripten64": "NK_RUNTIME=emscripten64 node --test test/test-wasm.mjs",
+    "test:wasm:wasi": "NK_RUNTIME=wasi-node node --test test/test-wasm.mjs",
+    "test:wasm:browser": "npx playwright test",
+    "test:wasm:all": "npm run test:wasm:emscripten && npm run test:wasm:emscripten64 && npm run test:wasm:wasi && npm run test:wasm:browser",
+    "bench": "node bench/bench.mjs",
+    "bench:native": "NK_RUNTIME=native node bench/bench.mjs",
+    "bench:emscripten": "NK_RUNTIME=emscripten node bench/bench.mjs",
+    "bench:wasi": "NK_RUNTIME=wasi node bench/bench.mjs",
+    "bench:browser": "node bench/bench.mjs --browser",
+    "bench:all": "npm run bench:native && npm run bench:emscripten && npm run bench:wasi && npm run bench:browser",
+    "bench:report": "node bench/bench.mjs --report"
+  },
+  "main": "javascript/dist/cjs/numkong.js",
+  "module": "javascript/dist/esm/numkong.js",
+  "exports": {
+    ".": {
+      "import": "./javascript/dist/esm/numkong.js",
+      "require": "./javascript/dist/cjs/numkong.js"
+    },
+    "./wasm": {
+      "import": "./wasm/numkong.js",
+      "types": "./wasm/numkong.d.ts"
+    },
+    "./numkong.gypi": "./numkong.gypi",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "node-addon-api": "^8.5.0",
+    "node-gyp-build": "^4.8.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@types/bindings": "^1.5.5",
+    "@types/node": "^24.10.0",
+    "node-gyp": "^11.5.0",
+    "playwright": "^1.58.0",
+    "http-server": "^14.1.1",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.3",
+    "benchmark": "^2.1.4",
+    "mathjs": "^14.9.0",
+    "usearch": "^2.21.0"
+  },
+  "files": [
+    "c/",
+    "include/",
+    "javascript/dist/",
+    "javascript/*.ts",
+    "javascript/*.json",
+    "javascript/*.c",
+    "probes/",
+    "wasm/",
+    "binding.gyp",
+    "numkong.gypi",
+    "LICENSE"
+  ],
+  "prettier": {
+    "printWidth": 120
+  },
+  "optionalDependencies": {
+    "@numkong/darwin-arm64": "7.6.0",
+    "@numkong/darwin-x64": "7.6.0",
+    "@numkong/linux-arm64": "7.6.0",
+    "@numkong/linux-x64": "7.6.0",
+    "@numkong/win32-arm64": "7.6.0",
+    "@numkong/win32-x64": "7.6.0"
+  }
+}
