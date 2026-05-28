@@ -17,6 +17,7 @@ import { GraphBuilder, CodePropertyGraph, NodeType } from "@metabob/cpg-inferenc
 const PORT = Number(process.env.PORT ?? 8250);
 const VESSEL_ID = process.env.VESSEL_ID ?? "analysis-vessel-local";
 const DISCOVERY = process.env.DISCOVERY_VESSEL_ENDPOINT ?? process.env.DISCOVERY_ENDPOINT ?? "http://127.0.0.1:8100";
+const ACTIVITY_API = process.env.ACTIVITY_API_URL ?? process.env.ACTIVITY_API_ENDPOINT ?? "http://127.0.0.1:8080";
 const API_KEY = process.env.METABOB_API_KEY ?? "";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -298,6 +299,7 @@ await new VesselDaemon({
   executor: new ActivityExecutor(runtime),
   resolvers,
   discoveryEndpoint: DISCOVERY,
+  activityApiEndpoint: ACTIVITY_API,
   apiKey: API_KEY || undefined,
   version: "0.1.0",
   enforceCompositionChain: false,
