@@ -12,7 +12,7 @@
 
 import { ActivityExecutor, ExecutionRuntime, VesselDaemon } from "@avigopal/ias-executor-ts";
 import type { ResolverHandler } from "@avigopal/ias-executor-ts";
-import { GraphBuilder, CodePropertyGraph, NodeType } from "@metabob/cpg-inference";
+import { GraphBuilder, CodePropertyGraph, NodeType } from "@avigopal/cpg-inference";
 
 const PORT = Number(process.env.PORT ?? 8250);
 const VESSEL_ID = process.env.VESSEL_ID ?? "analysis-vessel-local";

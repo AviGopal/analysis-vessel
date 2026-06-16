@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@avigopal/ias-executor-ts": "file:../ias-executor-ts",
-    "@metabob/cpg-inference": "file:../cpg-inference-ts"
+    "@avigopal/cpg-inference": "file:../cpg-inference-ts"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
