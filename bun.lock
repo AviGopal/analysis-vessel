@@ -5,8 +5,8 @@
     "": {
       "name": "analysis-vessel",
       "dependencies": {
+        "@avigopal/cpg-inference": "file:../cpg-inference-ts",
         "@avigopal/ias-executor-ts": "file:../ias-executor-ts",
-        "@metabob/cpg-inference": "file:../cpg-inference-ts",
       },
       "devDependencies": {
         "bun-types": "latest",
@@ -15,9 +15,9 @@
     },
   },
   "packages": {
-    "@avigopal/ias-executor-ts": ["@avigopal/ias-executor-ts@file:../ias-executor-ts", { "devDependencies": { "@types/bun": "^1.3.10", "typescript": "^5.8.3" } }],
+    "@avigopal/cpg-inference": ["@avigopal/cpg-inference@file:../cpg-inference-ts", { "dependencies": { "onnxruntime-node": "^1.20.1", "usearch": "^2.21.4", "web-tree-sitter": "^0.26.9" }, "devDependencies": { "@types/bun": "latest", "@types/node": "^25.7.0", "typescript": "^5.7.2" }, "optionalDependencies": { "better-sqlite3": "^11.7.0" } }],
 
-    "@metabob/cpg-inference": ["@metabob/cpg-inference@file:../cpg-inference-ts", { "dependencies": { "onnxruntime-node": "^1.20.1", "tree-sitter": "^0.21.1", "tree-sitter-javascript": "^0.23.0", "tree-sitter-python": "^0.23.5", "tree-sitter-typescript": "^0.23.0", "usearch": "^2.21.4" }, "devDependencies": { "@types/bun": "latest", "@types/node": "^25.7.0", "typescript": "^5.7.2" }, "optionalDependencies": { "better-sqlite3": "^11.7.0" } }],
+    "@avigopal/ias-executor-ts": ["@avigopal/ias-executor-ts@file:../ias-executor-ts", { "devDependencies": { "@types/bun": "^1.3.10", "typescript": "^5.8.3" } }],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
@@ -129,14 +129,6 @@
 
     "tar-stream": ["tar-stream@2.2.0", "", { "dependencies": { "bl": "^4.0.3", "end-of-stream": "^1.4.1", "fs-constants": "^1.0.0", "inherits": "^2.0.3", "readable-stream": "^3.1.1" } }, "sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ=="],
 
-    "tree-sitter": ["tree-sitter@0.21.1", "", { "dependencies": { "node-addon-api": "^8.0.0", "node-gyp-build": "^4.8.0" } }, "sha512-7dxoA6kYvtgWw80265MyqJlkRl4yawIjO7S5MigytjELkX43fV2WsAXzsNfO7sBpPPCF5Gp0+XzHk0DwLCq3xQ=="],
-
-    "tree-sitter-javascript": ["tree-sitter-javascript@0.23.1", "", { "dependencies": { "node-addon-api": "^8.2.2", "node-gyp-build": "^4.8.2" }, "peerDependencies": { "tree-sitter": "^0.21.1" }, "optionalPeers": ["tree-sitter"] }, "sha512-/bnhbrTD9frUYHQTiYnPcxyHORIw157ERBa6dqzaKxvR/x3PC4Yzd+D1pZIMS6zNg2v3a8BZ0oK7jHqsQo9fWA=="],
-
-    "tree-sitter-python": ["tree-sitter-python@0.23.6", "", { "dependencies": { "node-addon-api": "^8.3.0", "node-gyp-build": "^4.8.4" }, "peerDependencies": { "tree-sitter": "^0.22.1" }, "optionalPeers": ["tree-sitter"] }, "sha512-yIM9z0oxKIxT7bAtPOhgoVl6gTXlmlIhue7liFT4oBPF/lha7Ha4dQBS82Av6hMMRZoVnFJI8M6mL+SwWoLD3A=="],
-
-    "tree-sitter-typescript": ["tree-sitter-typescript@0.23.2", "", { "dependencies": { "node-addon-api": "^8.2.2", "node-gyp-build": "^4.8.2", "tree-sitter-javascript": "^0.23.1" }, "peerDependencies": { "tree-sitter": "^0.21.0" }, "optionalPeers": ["tree-sitter"] }, "sha512-e04JUUKxTT53/x3Uq1zIL45DoYKVfHH4CZqwgZhPg5qYROl5nQjV+85ruFzFGZxu+QeFVbRTPDRnqL9UbU4VeA=="],
-
     "tunnel-agent": ["tunnel-agent@0.6.0", "", { "dependencies": { "safe-buffer": "^5.0.1" } }, "sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w=="],
 
     "type-fest": ["type-fest@0.20.2", "", {}, "sha512-Ne+eE4r0/iWnpAxD852z3A+N0Bt5RN//NjJwRd2VFHEmrywxf5vsZlh4R6lixl6B+wz/8d+maTSAkN1FIkI3LQ=="],
@@ -148,6 +140,8 @@
     "usearch": ["usearch@2.25.3", "", { "dependencies": { "bindings": "^1.5.0", "node-addon-api": "^8.5.0", "node-gyp-build": "^4.8.4" } }, "sha512-mvg6/hBVlx/4dQxa9Yj2ED/wiOhRM6GOw6vRRT+/4H2uYmXGcOO/v9fbf36UA6ycIbaSNzbdLXtbVBvd5JLcfA=="],
 
     "util-deprecate": ["util-deprecate@1.0.2", "", {}, "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="],
+
+    "web-tree-sitter": ["web-tree-sitter@0.26.9", "", {}, "sha512-YJwSHANl6XFgeEjB8nitgj0qZYt5gkIesJ4w2srS2wcLB4GUa4xcOkM0YaMsU6WNR53YVIkDSY7Ej4pf3IXtCA=="],
 
     "wrappy": ["wrappy@1.0.2", "", {}, "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ=="],
   }

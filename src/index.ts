@@ -12,7 +12,7 @@
 
 import { ActivityExecutor, ExecutionRuntime, VesselDaemon } from "@avigopal/ias-executor-ts";
 import type { ResolverHandler } from "@avigopal/ias-executor-ts";
-import { GraphBuilder, CodePropertyGraph, NodeType } from "@avigopal/cpg-inference";
+import { GraphBuilder, CodePropertyGraph, NodeType, initParser } from "@avigopal/cpg-inference";
 
 const PORT = Number(process.env.PORT ?? 8250);
 const VESSEL_ID = process.env.VESSEL_ID ?? "analysis-vessel-local";
@@ -275,6 +275,11 @@ const resolvers = new Map<string, ResolverHandler>([
   ["code_annotation", codeAnnotation],
   ["cpg_query_result", cpgQueryResult],
 ]);
+
+// Warm up the WASM tree-sitter runtime + grammars once before serving. The
+// CPG resolvers drive GraphBuilder/SourceParser synchronously inside request
+// handlers; web-tree-sitter init is async, so it must complete here first.
+await initParser();
 
 const runtime = new ExecutionRuntime({
   attachedVessels: [{
