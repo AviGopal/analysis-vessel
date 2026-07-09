@@ -46,8 +46,26 @@ function arr(o: unknown, ...keys: string[]): unknown[] | undefined {
   return Array.isArray(v) ? v : undefined;
 }
 
+const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT ?? "/workspace";
+
+async function resolveFilePath(rawPath: string): Promise<string> {
+  const m = rawPath.match(/^\/repos\/([^\/]+)\/(.+)$/) ?? rawPath.match(/^repos\/([^\/]+)\/(.+)$/);
+  if (!m) return rawPath;
+  const vessel = m[1]!;
+  const rest = m[2]!;
+  const candidates = [
+    `/vessels/${vessel}/${rest}`,
+    `${WORKSPACE_ROOT}/repos/${vessel}/${rest}`,
+  ];
+  for (const candidate of candidates) {
+    if (await Bun.file(candidate).exists()) return candidate;
+  }
+  throw new Error(`ENOENT: no such file — tried: ${candidates.join(", ")}`);
+}
+
 async function readFile(path: string, lineStart?: number, lineEnd?: number): Promise<string> {
-  const text = await Bun.file(path).text();
+  const resolved = await resolveFilePath(path);
+  const text = await Bun.file(resolved).text();
   if (lineStart === undefined && lineEnd === undefined) return text;
   const lines = text.split("\n");
   const start = Math.max(0, (lineStart ?? 1) - 1);
