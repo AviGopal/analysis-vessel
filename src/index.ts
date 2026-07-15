@@ -65,7 +65,15 @@ async function resolveFilePath(rawPath: string): Promise<string> {
 
 async function readFile(path: string, lineStart?: number, lineEnd?: number): Promise<string> {
   const resolved = await resolveFilePath(path);
-  const text = await Bun.file(resolved).text();
+  let text = "";
+  for (let attempt = 0; ; attempt++) {
+    try { text = await Bun.file(resolved).text(); break; }
+    catch (e) {
+      const msg = (e as Error)?.message ?? "";
+      if (attempt < 5 && /ENOENT|no such file/i.test(msg)) { await new Promise((r) => setTimeout(r, 80)); continue; }
+      throw e;
+    }
+  }
   if (lineStart === undefined && lineEnd === undefined) return text;
   const lines = text.split("\n");
   const start = Math.max(0, (lineStart ?? 1) - 1);
