@@ -188,6 +188,20 @@ const problemDetection: ResolverHandler = async (ctx) => {
     }
   }
 
+  // ERROR-AS-CONTENT GUARD (2026-08-03). When EVERY requested path failed to read,
+  // this resolver used to return a SUCCESS-shaped envelope whose problems[] carried the
+  // ENOENT text. goal-host's rawResolve rejection guard only fires on `success:false` or a
+  // top-level `error`, so it could not see this: the filesystem error survived as legitimate
+  // produced content, was bound as a composed note body, and an LLM narrated it into a
+  // confident "Failure Analysis / Root Cause / Lessons Learned" report about a file that
+  // never existed (memoryNote gap-route-edit-1ac09d4f-failure-analysis-*).
+  // The error key is added ONLY on this path: VesselDaemon computes success as the ABSENCE
+  // of the key (`"error" in result`), so an always-present `error: ""` would mark every
+  // healthy call failed. Partial results are preserved — if any file read, the normal
+  // envelope is returned. Matches the bare-{error} idiom every sibling resolver here uses.
+  if (problems.length > 0 && problems.every((p) => String((p as Record<string, unknown>)["category"]) === "read_error")) {
+    return { error: "no analyzable file: " + problems.map((p) => String((p as Record<string, unknown>)["message"])).join("; ") };
+  }
   return {
     shape: "problem_detection",
     problems,
