@@ -47,50 +47,20 @@ function arr(o: unknown, ...keys: string[]): unknown[] | undefined {
 }
 
 const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT ?? "/workspace";
+import { resolveFilePathPlan } from "./resolve-file-path";
 
 async function resolveFilePath(rawPath: string): Promise<string> {
-  const m = rawPath.match(/^\/repos\/([^\/]+)\/(.+)$/) ?? rawPath.match(/^repos\/([^\/]+)\/(.+)$/);
-  if (!m) {
-    // A NON-repos/ PATH USED TO FALL THROUGH TO THIS VESSEL'S OWN CWD (2026-08-09).
-    //
-    // `return rawPath` handed a bare name straight to Bun.file(), which resolves it
-    // against analysis-vessel's WorkingDirectory — a directory containing this vessel
-    // and nothing else. Every such read failed ENOENT no matter how reasonable.
-    //
-    // The cost is what that teaches the caller. This vessel serves problem_detection
-    // and code_annotation, so it is where goal walks investigate code. Five walks in a
-    // row went hollow because they could not locate a file, and the names they tried
-    // degraded as they got more desperate: 'trace_store_schema.sql',
-    // 'trace_store_deletion_logic.py' (a .py in an all-TypeScript fleet), 'trace_store.py',
-    // 'error_log', and finally './find . -name "*execution*"' passed as a PATH. The walk
-    // knew it had to search and had no way to succeed (law 8).
-    //
-    // Anchoring to WORKSPACE_ROOT does not conjure files that do not exist — it makes a
-    // path the caller has legitimately discovered actually resolve, and makes the error
-    // name a real location instead of an invisible one. Absolute paths stay untouched,
-    // so callers that already work are unaffected.
-    if (!rawPath.startsWith("/")) return `${WORKSPACE_ROOT}/${rawPath}`;
-    return rawPath;
-  }
-  const vessel = m[1]!;
-  const rest = m[2]!;
-  const candidates = [
-    `/vessels/${vessel}/${rest}`,
-    // THE SECOND CANDIDATE WAS DEAD. It read `${WORKSPACE_ROOT}/repos/${vessel}` —
-    // /workspace/repos — which does not exist on the substrate; verified on the hub:
-    //   /workspace/repos exists: NO
-    //   /workspace/git/vessels exists: YES
-    //   /vessels/activity-api exists: YES
-    // So this list had exactly one working entry pretending to be two, and the fallback
-    // could never fire. The checkouts live under /workspace/git/vessels/<vessel>, which
-    // is also what mirror-to-live deploys FROM, so it is the correct second place to
-    // look when a vessel is not (yet) mirrored into /vessels.
-    `${WORKSPACE_ROOT}/git/vessels/${vessel}/${rest}`,
-  ];
-  for (const candidate of candidates) {
+  // The path DECISION lives in ./resolve-file-path so it can be tested; this
+  // function is only the filesystem probe. Keeping the decision here is what made
+  // the old test mirror it (index.ts boots a server and imports
+  // @avigopal/cpg-inference, so a test importing it never loads), and a mirrored
+  // copy cannot detect drift.
+  const plan = resolveFilePathPlan(rawPath, WORKSPACE_ROOT);
+  if (plan.kind === "direct") return plan.path;
+  for (const candidate of plan.candidates) {
     if (await Bun.file(candidate).exists()) return candidate;
   }
-  throw new Error(`ENOENT: no such file — tried: ${candidates.join(", ")}`);
+  throw new Error(`ENOENT: no such file — tried: ${plan.candidates.join(", ")}`);
 }
 
 async function readFile(path: string, lineStart?: number, lineEnd?: number): Promise<string> {
