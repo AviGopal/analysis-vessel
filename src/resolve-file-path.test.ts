@@ -14,7 +14,9 @@
 // to the real decision breaks this file.
 import { describe, expect, it } from "bun:test";
 
-import { resolveFilePathPlan } from "./resolve-file-path";
+import * as resolveFilePath from "./resolve-file-path";
+
+const { resolveFilePathPlan } = resolveFilePath;
 
 const WORKSPACE_ROOT = "/workspace";
 
@@ -55,10 +57,14 @@ describe("resolveFilePathPlan", () => {
     });
   });
 
-  it("leaves a non-repos absolute path untouched", () => {
-    expect(resolveFilePathPlan("/etc/substrate/env", WORKSPACE_ROOT)).toEqual({
-      kind: "direct",
-      path: "/etc/substrate/env",
-    });
+  // FLIPPED (security fix). This test used to assert that "/etc/substrate/env"
+  // passed through untouched — i.e. it pinned the defect: the fleet's env file was
+  // one unauthenticated /resolve away. The pure plan may still name the path; what
+  // must hold is that the CONFINED resolver every read goes through refuses it.
+  // Refusal happens on the realpath, before any read.
+  it("REFUSES a non-repos absolute path outside the roots (/etc/substrate/env)", async () => {
+    await expect(
+      resolveFilePath.resolveConfinedPath("/etc/substrate/env", { workspaceRoot: WORKSPACE_ROOT, runtimeDir: "/vessels", roots: ["/vessels"] }),
+    ).rejects.toThrow(/outside the analysis roots/);
   });
 });
