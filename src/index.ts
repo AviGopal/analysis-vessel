@@ -47,38 +47,25 @@ function arr(o: unknown, ...keys: string[]): unknown[] | undefined {
 }
 
 const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT ?? "/workspace";
-import { resolveFilePathPlan } from "./resolve-file-path";
+import { readConfinedText, type ConfinedReadConfig } from "./resolve-file-path";
+import { configuredAnalysisRoots } from "./path-confinement";
 
-async function resolveFilePath(rawPath: string): Promise<string> {
-  // The path DECISION lives in ./resolve-file-path so it can be tested; this
-  // function is only the filesystem probe. Keeping the decision here is what made
-  // the old test mirror it (index.ts boots a server and imports
-  // @avigopal/cpg-inference, so a test importing it never loads), and a mirrored
-  // copy cannot detect drift.
-  const plan = resolveFilePathPlan(rawPath, WORKSPACE_ROOT);
-  if (plan.kind === "direct") return plan.path;
-  for (const candidate of plan.candidates) {
-    if (await Bun.file(candidate).exists()) return candidate;
-  }
-  throw new Error(`ENOENT: no such file — tried: ${plan.candidates.join(", ")}`);
-}
+// EVERY READ IS CONFINED. All six resolvers below read a caller-supplied path on an
+// endpoint that holds the fleet's credentials in its env. Five of them used to call
+// the Bun file reader on the raw input directly and source_code passed absolute paths through, so
+// /etc/substrate/env and /proc/self/environ were one POST away. Each read now goes
+// through readConfinedText: realpath-confined to the analysis roots, NEVER_INSIDE
+// enforced (./path-confinement). The path DECISION and the confinement live outside
+// this file because index.ts boots a server on import and cannot be tested.
+const READ_CONFIG: ConfinedReadConfig = {
+  workspaceRoot: WORKSPACE_ROOT,
+  runtimeDir: process.env.MITOSIS_RUNTIME_DIR ?? "/vessels",
+  roots: configuredAnalysisRoots(process.env),
+};
+console.log(`[analysis-vessel] read roots: ${READ_CONFIG.roots.join(", ") || "(none — every read will be refused)"}`);
 
-async function readFile(path: string, lineStart?: number, lineEnd?: number): Promise<string> {
-  const resolved = await resolveFilePath(path);
-  let text = "";
-  for (let attempt = 0; ; attempt++) {
-    try { text = await Bun.file(resolved).text(); break; }
-    catch (e) {
-      const msg = (e as Error)?.message ?? "";
-      if (attempt < 5 && /ENOENT|no such file/i.test(msg)) { await new Promise((r) => setTimeout(r, 80)); continue; }
-      throw e;
-    }
-  }
-  if (lineStart === undefined && lineEnd === undefined) return text;
-  const lines = text.split("\n");
-  const start = Math.max(0, (lineStart ?? 1) - 1);
-  const end = lineEnd ? Math.min(lines.length, lineEnd) : lines.length;
-  return lines.slice(start, end).join("\n");
+function readFile(path: string, lineStart?: number, lineEnd?: number): Promise<string> {
+  return readConfinedText(path, READ_CONFIG, lineStart, lineEnd);
 }
 
 const CPG_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".py"]);
@@ -119,7 +106,7 @@ const errorLog: ResolverHandler = async (ctx) => {
   if (!logFilePath) return { error: "logFilePath is required" };
   const maxLines = num(pointer, "options", "max_lines") ?? 100;
   try {
-    const text = await Bun.file(logFilePath).text();
+    const text = await readFile(logFilePath);
     const lines = text.split("\n").filter(l => l.trim());
     const limited = lines.slice(-maxLines);
     return {
@@ -144,7 +131,7 @@ const problemDetection: ResolverHandler = async (ctx) => {
   const problems: Array<Record<string, unknown>> = [];
   for (const fp of filePaths as string[]) {
     try {
-      const source = await Bun.file(fp).text();
+      const source = await readFile(fp);
       if (isCPGSupported(fp)) {
         const cpg = buildCPG(fp, source);
         const nodes = Array.from(cpg.nodes.values());
@@ -216,7 +203,7 @@ const codeQuality: ResolverHandler = async (ctx) => {
   const filePath = str(pointer, "filePath") ?? str(pointer, "path") ?? str(pointer, "file_path");
   if (!filePath) return { error: "filePath is required" };
   try {
-    const source = await Bun.file(filePath).text();
+    const source = await readFile(filePath);
     const lines = source.split("\n");
     const base = {
       total_lines: lines.length,
@@ -253,7 +240,7 @@ const codeAnnotation: ResolverHandler = async (ctx) => {
   const filePath = str(pointer, "filePath") ?? str(pointer, "path") ?? str(pointer, "file_path");
   if (!filePath) return { error: "filePath is required" };
   try {
-    const source = await Bun.file(filePath).text();
+    const source = await readFile(filePath);
     if (!isCPGSupported(filePath)) {
       return { shape: "code_annotation", filePath, annotations: [], total: 0, cpg_supported: false };
     }
@@ -284,7 +271,7 @@ const cpgQueryResult: ResolverHandler = async (ctx) => {
     const cpg = new CodePropertyGraph();
     const builder = new GraphBuilder(cpg);
     for (const fp of filePaths as string[]) {
-      const source = await Bun.file(fp).text();
+      const source = await readFile(fp);
       builder.addFile(fp, source);
     }
     const allNodes = Array.from(cpg.nodes.values());
